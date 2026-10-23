@@ -1,0 +1,10 @@
+{
+  "description": "Identify, reuse, and responsibly dispose of electronic items with EcoLens, your AI-powered assistant for e-waste management and environmental impact tracking.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
