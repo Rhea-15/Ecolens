@@ -1,14 +1,10 @@
 # EcoLens ♻️
 
-**AI-assisted e-waste identification, safe reuse/repair guidance, and verified disposal routes, powered by Google Gemma 4.**
+**AI-assisted e-waste identification, safe reuse/repair guidance, and verified disposal routes in India, powered by Google Gemma 4.**
 
 EcoLens helps people decide what to do with old electronics. Snap a photo, and a Gemma 4 model identifies the item, flags visible damage, and recommends whether to reuse, repair, or recycle it. Deterministic safety guardrails make sure the AI can never talk someone into reusing a dangerous device.
 
 > Built for the **Gemma 4 hackathon** ("Best use of Gemma 4").
-
-<!-- Add screenshots / demo GIF here -->
-<!-- ![EcoLens scanner](docs/scanner.png) -->
-
 ---
 
 ## Table of contents
@@ -22,8 +18,10 @@ EcoLens helps people decide what to do with old electronics. Snap a photo, and a
 - [Configuration](#configuration)
 - [API reference](#api-reference)
 - [Safety guardrails](#safety-guardrails)
+- [Disposal data](#disposal-data)
 - [Testing](#testing)
 - [Evaluation on ETID](#evaluation-on-etid)
+- [Troubleshooting](#troubleshooting)
 - [Design decisions](#design-decisions)
 - [Limitations](#limitations)
 - [Roadmap](#roadmap)
@@ -40,25 +38,27 @@ EcoLens helps people decide what to do with old electronics. Snap a photo, and a
 | **Overview** | Dashboard with live AI status and a summary of your confirmed actions | No |
 | **AI Scanner** | Upload or capture a photo; Gemma 4 returns item name, category, condition, damage clues, confidence, and a recommended handover | **Yes** |
 | **Reuse & Repair** | Guidance for reuse, repair, or recycling, with deterministic safety overrides. Mark an item as reused, repaired, or recycled | No |
-| **Disposal Finder** | Search verified collection points and recyclers by location and item category. Each entry cites its source and verification date | No (rule-based) |
+| **Disposal Finder** | Search verified e-waste collection points and recyclers in India by location and item category. Each entry cites its source and verification date | No (rule-based) |
 | **My Impact** | Local ledger of confirmed actions, a personal goal tracker, and filterable history | No |
 
 ## How Gemma 4 is used
 
 Gemma 4 powers the **AI Scanner**, where it acts as a vision-language model that turns a photo into structured JSON.
 
-1. The image and a carefully constrained prompt are sent to Gemma 4.
+1. The image and a constrained prompt are sent to Gemma 4.
 2. The prompt includes the exact output schema, allowed enums, and rules such as *only describe what is visible* and *never output null*.
 3. [ETID](#evaluation-on-etid) class names are passed as label hints so predictions can be scored against a public dataset.
-4. The raw reply is parsed defensively (fences and stray prose are stripped) and validated with Pydantic.
+4. The raw reply is parsed defensively (code fences and stray prose are stripped) and validated with Pydantic.
 5. A deterministic [guardrail layer](#safety-guardrails) post-processes the result before it reaches the user.
 
-Two interchangeable providers are supported through a single function (`run_gemma_vision`):
+One function, `run_gemma_vision`, supports two providers. You choose one with `GEMMA_PROVIDER`:
 
 | Provider | `GEMMA_PROVIDER` | Default model | Notes |
 | --- | --- | --- | --- |
-| Local (Ollama) | `ollama` | `gemma4:e4b` | Runs on your machine; images never leave your device |
-| Hosted (Gemini API) | `gemini_api` | `gemma-4-26b-a4b-it` | Requires an API key |
+| Local (Ollama) | `ollama` | `gemma4:e2b` | Runs on your machine; images never leave your device |
+| Hosted (Gemini API) | `gemini_api` | `gemma-4-26b-a4b-it` | Requires an API key; images are sent to Google |
+
+The backend uses one provider at a time and does **not** switch automatically when one fails. To change providers, edit `GEMMA_PROVIDER` in `backend/.env` and restart the server.
 
 Gemma 4 is deliberately **not** used for disposal facility lookup or safety decisions. Those need to be verifiable and predictable, so they are rule-based.
 
@@ -70,7 +70,7 @@ flowchart LR
     F -- "POST /api/scan (image)" --> B[FastAPI backend]
     B --> V[Validate type and size]
     V --> P[Build prompt + ETID label hints]
-    P --> G{Provider}
+    P --> G{GEMMA_PROVIDER}
     G -- ollama --> O[Local Gemma 4 via Ollama]
     G -- gemini_api --> H[Hosted Gemma 4 via Gemini API]
     O --> J[Extract JSON]
@@ -100,17 +100,18 @@ flowchart LR
 │   ├── app/
 │   │   ├── main.py             # FastAPI app and routes
 │   │   ├── config.py           # Settings (env-driven) and JSON loaders
-│   │   ├── gemma_client.py     # Provider-agnostic Gemma 4 vision call
+│   │   ├── gemma_client.py     # Provider-agnostic Gemma 4 vision call and health check
 │   │   ├── prompts.py          # System prompt, user prompt, JSON extraction
 │   │   ├── schemas.py          # Pydantic models and validators
 │   │   ├── guardrails.py       # Deterministic safety overrides
 │   │   ├── disposal.py         # Rule-based facility search
-│   │   ├── facilities.json     # Verified facilities with sources
+│   │   ├── facilities.json     # Verified facilities with sources (India)
 │   │   └── dataset_labels.json # ETID class → EcoLens category mapping
 │   ├── scripts/
 │   │   ├── make_eval_split.py  # Build a reproducible ETID eval split
 │   │   └── evaluate_etid.py    # Run Gemma 4 on the split and report metrics
 │   ├── tests/
+│   ├── .env.example            # Template for backend/.env (no secrets)
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
@@ -119,6 +120,7 @@ flowchart LR
 │   │   └── lib/types.ts        # Shared TypeScript types
 │   ├── index.html
 │   └── package.json
+├── .gitignore                  # Ignores backend/.env, backend/data/, virtualenvs
 ├── vite.config.ts
 └── .mise.toml                  # Node 22, pnpm
 ```
@@ -129,7 +131,7 @@ flowchart LR
 
 - Python 3.10+
 - Node.js 22 and pnpm (`.mise.toml` pins the versions)
-- **One** of: [Ollama](https://ollama.com) installed locally, **or** a Gemini API key
+- **One** of: [Ollama](https://ollama.com) installed locally, **or** a Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey)
 
 ### 1. Clone
 
@@ -147,19 +149,27 @@ source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Create `backend/.env` (see [Configuration](#configuration)) and pick a provider:
-
-**Option A: local Gemma 4 with Ollama (default)**
+Create your local settings file from the template:
 
 ```bash
-ollama pull gemma4:e4b
-ollama serve                      # skip if Ollama is already running
+cp .env.example .env             # Windows: Copy-Item .env.example .env
+```
+
+Then choose **one** provider in `backend/.env`.
+
+**Option A: local Gemma 4 with Ollama (default, recommended)**
+
+```bash
+ollama pull gemma4:e2b
+ollama run gemma4:e2b "Reply with the word OK"   # confirms the model loads
 ```
 
 ```env
 GEMMA_PROVIDER=ollama
-OLLAMA_MODEL=gemma4:e4b
+OLLAMA_MODEL=gemma4:e2b
 ```
+
+`OLLAMA_MODEL` must match the name shown by `ollama list`, including the tag. A mismatch is the most common setup problem (see [Troubleshooting](#troubleshooting)).
 
 **Option B: hosted Gemma 4 with the Gemini API**
 
@@ -175,7 +185,7 @@ Start the API:
 uvicorn app.main:app --reload --port 8000
 ```
 
-Check it: <http://localhost:8000/api/health>. Interactive docs are at <http://localhost:8000/docs>.
+Check it: <http://localhost:8000/api/health> should report `"ai_status": "ready"` and a `detail` message. Interactive docs are at <http://localhost:8000/docs>.
 
 ### 3. Frontend
 
@@ -202,28 +212,37 @@ VITE_API_BASE_URL=http://localhost:8000
 
 ## Configuration
 
-All backend settings are environment variables (or entries in `backend/.env`).
+All backend settings are environment variables, read from `backend/.env`. The file is read only at startup, so restart the server after every change.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `GEMMA_PROVIDER` | `ollama` | `ollama` or `gemini_api` |
+| `GEMMA_PROVIDER` | `ollama` | `ollama` or `gemini_api`. Only one is used at a time |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL |
-| `OLLAMA_MODEL` | `gemma4:e4b` | Ollama model tag |
-| `GEMMA_API_KEY` | *(empty)* | Required when using `gemini_api` |
+| `OLLAMA_MODEL` | `gemma4:e2b` | Ollama model name, exactly as shown by `ollama list` |
+| `GEMMA_API_KEY` | *(empty)* | Required when `GEMMA_PROVIDER=gemini_api`. Keep it only in `.env` |
 | `GEMMA_API_MODEL` | `gemma-4-26b-a4b-it` | Hosted model name |
 | `CORS_ORIGINS` | `http://localhost:5173` | Comma-separated allowed origins |
 | `MAX_UPLOAD_MB` | `10` | Maximum upload size |
 
 Frontend: `VITE_API_BASE_URL` (default `http://localhost:8000`).
 
+> **Never commit `backend/.env`.** It holds your API key. `.gitignore` excludes it, but check before every push.
+
 ## API reference
 
 ### `GET /api/health`
-Returns service status and the active provider.
+Returns service status, whether the active model is ready, and a human-readable reason.
 
 ```json
-{ "status": "ok", "ai_status": "ready", "provider": "ollama" }
+{
+  "status": "ok",
+  "ai_status": "ready",
+  "detail": "Ollama model gemma4:e2b is ready",
+  "provider": "ollama"
+}
 ```
+
+When the model is not ready, `ai_status` is `"unavailable"` and `detail` says why, for example that Ollama is not running or the model is not installed.
 
 ### `POST /api/scan`
 `multipart/form-data` with a `file` field (JPEG, PNG, or WebP).
@@ -249,7 +268,7 @@ Example response (illustrative):
     "safety_warnings": []
   },
   "provider": "ollama",
-  "model": "gemma4:e4b"
+  "model": "gemma4:e2b"
 }
 ```
 
@@ -257,7 +276,7 @@ Example response (illustrative):
 | --- | --- |
 | 413 | Image larger than `MAX_UPLOAD_MB` |
 | 415 | Unsupported image type |
-| 502 | Model returned output that could not be parsed or validated |
+| 502 | The model provider could not answer (Ollama unreachable, model not installed, API error), or the model's reply could not be parsed or validated. The `detail` field explains which |
 
 ### `POST /api/facilities/search`
 
@@ -265,7 +284,7 @@ Example response (illustrative):
 { "location": "Mumbai", "category": "All items" }
 ```
 
-Returns `{ "results": [ ...facilities ] }`. `location` matches name, address, city, or state. A specific `category` only returns facilities that list that item in `accepts`.
+Returns `{ "results": [ ...facilities ] }`. `location` matches a facility's name, address, city, or state. A specific `category` only returns facilities that list that item in `accepts`. See [Disposal data](#disposal-data).
 
 ### `POST /api/impact/log`
 Validates and echoes an action entry (`Reused`, `Repaired`, or `Recycled`). The current frontend stores the ledger locally in the browser.
@@ -283,6 +302,17 @@ If any match, EcoLens:
 - appends a fixed, human-written safety warning
 
 An `unsafe` condition can never be downgraded by the model, so a hallucinated "this swollen battery is fine to reuse" cannot reach the user.
+
+## Disposal data
+
+`backend/app/facilities.json` is the single source of truth for the Disposal Finder. It currently covers India, with entries in Navi Mumbai, Mumbai, Bhiwandi, and Pune, taken from official and company EPR pages. Each entry records:
+
+- `source_url` and `verified_source`: where the information came from
+- `verified_on`: when it was checked
+- `accepts`: the items the facility takes. **This is empty for every entry right now**, because the sources don't list accepted items. Entries with no listed items show "Accepted items: confirm by phone" and appear only under "All items".
+- `consumer_access`: `open`, `confirm`, or `brand_customers_only`
+
+Facilities should be confirmed by phone before they are shown to users, and `accepts` should be filled in once confirmed. Only a verified address should appear in the file. Do not guess missing details.
 
 ## Testing
 
@@ -306,7 +336,7 @@ EcoLens is evaluated on the **E-Tadweer Image Dataset (ETID)**. `backend/app/dat
 | Laptop, PCB | computers |
 | Mobile | phones |
 
-**1. Build a reproducible held-out split** (40 random images per class, fixed seed):
+**1. Build a reproducible held-out split** (40 random images per class, fixed seed). Keep the raw dataset outside the repo:
 
 ```bash
 cd backend
@@ -328,6 +358,8 @@ The script prints a summary and writes full results to `etid_results.json`:
 - `json_parse_failures`: replies that could not be parsed as JSON
 - per-class accuracy and a confusion matrix
 
+Don't tune the prompt on the images you report on. If you change the prompt, report results on the same split and say so.
+
 ### Results
 
 <!-- Fill in after running the evaluation -->
@@ -336,22 +368,43 @@ The script prints a summary and writes full results to `etid_results.json`:
 | --- | --- | --- | --- | --- | --- |
 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Health says `Model '...' is not installed` | `OLLAMA_MODEL` doesn't match `ollama list` | Run `ollama pull <name>`, or correct the name in `.env` and restart |
+| Health says `Cannot reach Ollama` | Ollama isn't running | Start Ollama, then retry |
+| Scan says `Model ... not found in Ollama` | Same as above; the scan path reports it | Same as above |
+| Scan says `Gemini API error` | Invalid key, model name, quota, or network issue | Check the message, the key in `.env`, and `GEMMA_API_MODEL` in AI Studio |
+| Scan says `Model returned invalid JSON` | The model replied in prose or with malformed JSON | Check the `Invalid model output. Raw text` line in the server log and tighten the prompt |
+| Changes to `.env` have no effect | Settings are read only at startup | Stop and restart uvicorn |
+| Health response has no `detail` field | An old server process is still running | Stop every Python process on port 8000 and restart |
+
 ## Design decisions
 
 - **AI where it helps, rules where it matters.** Perception is probabilistic, so Gemma 4 handles it. Safety and disposal are deterministic and auditable.
-- **Provider abstraction.** One function supports local and hosted Gemma 4, so the app runs offline with Ollama or on any machine with an API key.
+- **Provider abstraction, one provider at a time.** One function supports local and hosted Gemma 4. Choosing one provider explicitly makes it clear which model produced each result. Automatic failover is possible but is not implemented.
 - **Defensive structured output.** The schema is in the prompt, JSON is extracted tolerantly, and Pydantic validators coerce `null` values models tend to emit.
 - **Low temperature (0.1)** for consistent, schema-faithful answers.
-- **Sourced facility data.** Each facility records its source URL and verification date, and uncertain details (accepted items, public access) are flagged to confirm before visiting rather than guessed.
+- **Sourced facility data.** Each facility records its source URL and verification date. Uncertain details (accepted items, public access) are flagged to confirm before visiting rather than guessed.
 - **Honest uncertainty.** The model is asked for a `confidence` score and an `uncertainty_note` instead of forcing a confident answer on unclear images.
+- **Readable errors.** Model and provider failures return a 502 with a message that says what to fix, instead of an unhandled server error.
 
 ## Limitations
 
-- Identification covers the categories in the schema and the ETID classes; unusual devices may fall into `other`.
+- Identification covers the categories in the schema and the ETID classes. Unusual devices may fall into `other`.
 - Damage detection depends on image quality and what is visible. It is not a substitute for professional inspection.
 - Guardrail matching is keyword-based, so unusual phrasing may slip past it. Treat all battery and wiring warnings seriously regardless.
-- The facility list is a small, manually verified seed set. Always confirm details with the facility before visiting.
+- The facility list is a small, manually checked seed set covering a few cities in Maharashtra and Pune. Coverage elsewhere in India is not yet included, and accepted items are not yet listed. Always confirm details with the facility before visiting.
 - The impact ledger lives in browser `localStorage`, so it is per-device and cleared with site data.
+- The local model must accept image input. A text-only model will fail on scan.
+
+## Roadmap
+
+- Automatic fallback between providers (Ollama first, then the hosted API)
+- Filling in accepted items and public-access status for each verified facility
+- Wider facility coverage across India
+- Completing the ETID evaluation and filling in the results table above
 
 ## Contributing
 
@@ -359,11 +412,8 @@ Contributions are welcome.
 
 1. Fork the repo and create a branch from `main`.
 2. Make your change with tests where relevant (`pytest` in `backend/`).
-3. Open a pull request with a concise description of what changed and why.
-
-## License
-
-<!-- Choose a license, e.g. MIT, and add a LICENSE file -->
+3. Never commit `backend/.env`, API keys, or dataset files.
+4. Open a pull request with a concise description of what changed and why.
 
 ## Acknowledgements
 
