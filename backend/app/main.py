@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import dataset_labels, get_settings
 from .disposal import search_facilities
-from .gemma_client import run_gemma_vision
+from .gemma_client import ModelProviderError, check_provider, run_gemma_vision
 from .guardrails import apply_guardrails
 from .prompts import SCAN_SYSTEM_PROMPT, build_user_prompt, extract_json
 from .schemas import ActionLog, FacilityQuery, ScanResponse, ScanResult
@@ -27,7 +27,13 @@ ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp"}
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "ai_status": "ready", "provider": settings.gemma_provider}
+    ready, detail = await check_provider()
+    return {
+        "status": "ok",
+        "ai_status": "ready" if ready else "unavailable",
+        "detail": detail,
+        "provider": settings.gemma_provider,
+    }
 
 
 @app.post("/api/scan", response_model=ScanResponse)
@@ -41,9 +47,14 @@ async def scan(file: UploadFile = File(...)):
     labels = dataset_labels()
     hints = labels.get("label_hints", [])
 
-    raw, model_name = await run_gemma_vision(
-        SCAN_SYSTEM_PROMPT, build_user_prompt(hints), data, file.content_type
-    )
+    try:
+        raw, model_name = await run_gemma_vision(
+            SCAN_SYSTEM_PROMPT, build_user_prompt(hints), data, file.content_type
+        )
+    except ModelProviderError as exc:
+        log.error("Model provider failed: %s", exc)
+        raise HTTPException(502, str(exc))
+
     try:
         parsed = extract_json(raw)
         result = ScanResult(**parsed)

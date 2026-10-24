@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     gemma_provider: str = "ollama"
     ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "gemma4:e4b"
+    ollama_model: str = "gemma4:e2b"
     gemma_api_key: str = ""
     gemma_api_model: str = "gemma-4-26b-a4b-it"
     cors_origins: str = "http://localhost:5173"
