@@ -1,0 +1,58 @@
+[
+  {
+    "name": "E-Parisaraa Collection Centre, Vashi",
+    "address": "Plot-92, Gala No.-01, Sector 19C, Vashi, Navi Mumbai 400705",
+    "city": "Navi Mumbai",
+    "state": "Maharashtra",
+    "type": "Authorised recycler collection centre",
+    "accepts": [],
+    "accepts_note": "The source does not list accepted items. Confirm before visiting.",
+    "consumer_access": "brand_customers_only",
+    "contact": "Toll free +91 124 4504000, recycle@ewasteindia.com",
+    "verified_source": "Nokia India EPR page",
+    "verified_on": "2026-10-24",
+    "source_url": "https://nokia.com/nokia-in-india/responsible-recycling-at-nokia"
+  },
+  {
+    "name": "Global Waste Solution Collection Point, Charkop",
+    "address": "D-43, Jagruti CHS, Charkop Plot 275, Sector 2, Kandivali West, Charkop Market, Mumbai 400067",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "type": "Partner recycler collection point",
+    "accepts": [],
+    "accepts_note": "Source says the recycler is authorised by the Haryana board. Confirm its Maharashtra registration and accepted items.",
+    "consumer_access": "confirm",
+    "contact": "Devendra Agarwal 9650777025, toll free 1800-270-7666",
+    "verified_source": "Trivitron e-waste policy page",
+    "verified_on": "2026-10-24",
+    "source_url": "https://trivitron.com/e-waste"
+  },
+  {
+    "name": "WE-The Recycling Company, Bhiwandi",
+    "address": "H. No. 2212, Sr. No. 9-1 N, Behind Essar Petrol Pump, Village Borpada, Tal. Bhiwandi, Dist. Thane",
+    "city": "Bhiwandi",
+    "state": "Maharashtra",
+    "type": "MPCB-registered recycler (registration valid to 31/08/2027)",
+    "accepts": [],
+    "accepts_note": "Registered recycler. Call before visiting to confirm drop-off and accepted items.",
+    "consumer_access": "confirm",
+    "contact": "7718824575",
+    "verified_source": "MPCB list of authorised e-waste recyclers, Maharashtra",
+    "verified_on": "2026-10-24",
+    "source_url": "https://www.mpcb.gov.in/sites/default/files/List%20of%20Authorized%20E-waste%20Dismantlers%20and%20Recyclers%20in%20Maharashtra.pdf"
+  },
+  {
+    "name": "LG Electronics Collection Centre, Kardilewadi",
+    "address": "Gat no. 2270/1, 2270/2, 2270/3(P), 2269, 2283, 2282(P), 2284(P), 2280(P), Vill. Kardilewadi, Tehsil Shirur, Pune 412210",
+    "city": "Pune",
+    "state": "Maharashtra",
+    "type": "Brand take-back centre",
+    "accepts": [],
+    "accepts_note": "LG products only. Schedule a pickup through LG's call centre.",
+    "consumer_access": "brand_customers_only",
+    "contact": "Via LG India call centre (see source page)",
+    "verified_source": "LG Electronics India recycling page",
+    "verified_on": "2026-10-24",
+    "source_url": "https://lg.com/in/recycling"
+  }
+]

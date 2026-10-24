@@ -19,3 +19,11 @@ logs/
 # beside it.
 /.plugins/
 /.opencode-skills/
+backend/data/
+backend/.env
+backend/.venv/
+__pycache__/
+*.DS_Store
+__MACOSX/
+node_modules/
+frontend/dist/

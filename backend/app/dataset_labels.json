@@ -1,0 +1,14 @@
+
+{
+  "_note": "Keys must match the ETID folder names exactly. Category must be one of the EcoLens categories.",
+  "mappings": {
+    "Battery":  {"category": "batteries",   "dataset_label": "Battery"},
+    "Cable":    {"category": "cables",      "dataset_label": "Cable"},
+    "Keyboard": {"category": "accessories", "dataset_label": "Keyboard"},
+    "Mouse":    {"category": "accessories", "dataset_label": "Mouse"},
+    "Laptop":   {"category": "computers",   "dataset_label": "Laptop"},
+    "Mobile":   {"category": "phones",      "dataset_label": "Mobile"},
+    "PCB":      {"category": "computers",   "dataset_label": "PCB"}
+  },
+  "label_hints": ["Battery", "Cable", "Keyboard", "Mouse", "Laptop", "Mobile", "PCB"]
+}
