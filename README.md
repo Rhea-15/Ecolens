@@ -26,7 +26,6 @@ EcoLens helps people decide what to do with old electronics. Snap a photo, and a
 - [Limitations](#limitations)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
-- [License](#license)
 - [Acknowledgements](#acknowledgements)
 
 ---
